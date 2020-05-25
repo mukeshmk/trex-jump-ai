@@ -94,6 +94,9 @@ class Dino:
         # NOTE vel is negative cause the top left corner of the pygame window is (0, 0)
         self.vel = -9
 
+    def get_mask(self):
+        return pygame.mask.from_surface(self.img)
+
 class Base:
     VEL = 10
     WIDTH = base_img.get_width()
@@ -148,6 +151,22 @@ class Bush:
     def draw(self, win):
         for i in range(self.obstacle_size):
             win.blit(bush_imgs[i], (self.x[i], self.y))
+    
+    def collide(self, dino):
+        dino_mask = dino.get_mask()
+
+        points = []
+        for i in range(self.obstacle_size):
+            # getting the masks for the images
+            mask = pygame.mask.from_surface(bush_imgs[i])
+            # calculating the rectangle offset of the images
+            offset = (self.x[i] - dino.x, self.y - round(dino.y))
+            points.append(dino_mask.overlap(mask, offset))
+        
+        for point in points:
+            if point:
+                return True # collision occured
+        return False
 
 def draw_window(win, dino, base, bushes):
     base.draw(win)
@@ -180,6 +199,8 @@ def main():
         add_bush = False
         bushes_to_remove = []
         for bush in bushes:
+            if bush.collide(dino):
+                run = False
             # to check if the bush has left the game window
             if bush.x[bush.obstacle_size-1] + bush_imgs[bush.obstacle_size-1].get_width() < 0:
                 bushes_to_remove.append(bush)
