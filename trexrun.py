@@ -7,9 +7,10 @@ import random
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
-WIN_WIDTH = 750
-WIN_HEIGHT = 400
+WIN_WIDTH = 1300
+WIN_HEIGHT = 500
 FLOOR = 350
+DINO_BASE = 282.5
 
 WHITE = (255, 255, 255)
 
@@ -41,7 +42,7 @@ class Dino:
         displacement = self.vel * self.tick_count + 0.5 * 3 * (self.tick_count**2)
 
         # displacement occurs so that the dino lands on the floor and doesn't go below
-        if self.y < FLOOR - self.img.get_height():
+        if self.y < DINO_BASE:
             self.y += displacement
 
     def draw(self, win):
@@ -52,18 +53,46 @@ class Dino:
             self.img = self.IMGS[0]
         elif self.img_count <= self.ANIMATION_TIME*2:
             self.img = self.IMGS[1]
-        elif self.img_count <= self.ANIMATION_TIME*3:
-            self.img = self.IMGS[1]
-        elif self.img_count == self.ANIMATION_TIME*3 + 1:
+        elif self.img_count == self.ANIMATION_TIME*2 + 1:
             self.img = self.IMGS[0]
             self.img_count = 0
 
         win.blit(self.img, (self.x, self.y))
 
+class Base:
+    VEL = 5
+    WIDTH = base_img.get_width()
+    IMG = base_img
 
-def draw_window(win, dino):
-    win.fill(WHITE)
-    win.blit(base_img, (0, 350))
+    def __init__(self, y):
+        self.y = y
+        # for cyclic rotation of the background image
+        self.x1 = 0
+        self.x2 = self.WIDTH
+        self.x3 = self.WIDTH*2
+
+    def move(self):
+        self.x1 -= self.VEL
+        self.x2 -= self.VEL
+        self.x3 -= self.VEL
+
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x3 + self.WIDTH
+
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH
+        
+        if self.x3 + self.WIDTH < 0:
+            self.x3 = self.x2 + self.WIDTH
+
+    def draw(self, win):
+        win.fill(WHITE)
+        win.blit(self.IMG, (self.x1, self.y))
+        win.blit(self.IMG, (self.x2, self.y))
+        win.blit(self.IMG, (self.x3, self.y))
+
+def draw_window(win, dino, base):
+    base.draw(win)
     
     dino.draw(win)
     
@@ -74,7 +103,8 @@ def main():
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
 
-    dino = Dino(200, 200)
+    dino = Dino(200, DINO_BASE)
+    base = Base(FLOOR)
     
     run = True
     while run:
@@ -84,8 +114,9 @@ def main():
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 dino.move()
+        base.move()
         if dino.y > FLOOR:
             dino.y = 0
-        draw_window(win, dino)
+        draw_window(win, dino, base)
 
 main()
