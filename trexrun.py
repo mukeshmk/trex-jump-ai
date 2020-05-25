@@ -91,12 +91,34 @@ class Base:
         win.blit(self.IMG, (self.x2, self.y))
         win.blit(self.IMG, (self.x3, self.y))
 
-def draw_window(win, dino, base):
+class Bush:
+    VEL = 5
+
+    def __init__(self, x):
+        self.obstacle_size = 0
+        self.passed = False
+
+        self.x = [x, x + bush_imgs[0].get_width(), x + bush_imgs[0].get_width() + bush_imgs[1].get_width()]
+        self.y = 300
+
+        self.set_width()
+
+    def set_width(self):
+        self.obstacle_size = random.randrange(1, 4)
+
+    def move(self):
+        for i in range(3):
+            self.x[i] -= self.VEL
+
+    def draw(self, win):
+        for i in range(self.obstacle_size):
+            win.blit(bush_imgs[i], (self.x[i], self.y))
+
+def draw_window(win, dino, base, bush):
     base.draw(win)
-    
     dino.draw(win)
+    bush.draw(win)
     
-    win.blit(bush_imgs[0], (400, 300))
     pygame.display.update()
 
 def main():
@@ -105,6 +127,7 @@ def main():
 
     dino = Dino(200, DINO_BASE)
     base = Base(FLOOR)
+    bush = Bush(400)
     
     run = True
     while run:
@@ -115,8 +138,9 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 dino.move()
         base.move()
+        bush.move()
         if dino.y > FLOOR:
             dino.y = 0
-        draw_window(win, dino, base)
+        draw_window(win, dino, base, bush)
 
 main()
