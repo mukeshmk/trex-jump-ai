@@ -168,11 +168,14 @@ class Bush:
                 return True # collision occured
         return False
 
-def draw_window(win, dino, base, bushes):
+def draw_window(win, dino, base, bushes, score):
     base.draw(win)
     dino.draw(win)
     for bush in bushes:
         bush.draw(win)
+    
+    score_label = STAT_FONT.render("Score: " + str(score), 1, (169, 169, 169))
+    win.blit(score_label, (WIN_WIDTH - score_label.get_width() - 15, 10))
     
     pygame.display.update()
 
@@ -182,8 +185,10 @@ def main():
 
     dino = Dino(200, DINO_BASE)
     base = Base(FLOOR)
-    bushes = [Bush(400), Bush(1000)]
+    bushes = [Bush(600), Bush(1000)]
     
+    score = 0
+
     run = True
     while run:
         clock.tick(30)
@@ -208,6 +213,7 @@ def main():
             if not bush.passed and bush.x[bush.obstacle_size-1] < dino.x:
                 bush.passed = True
                 add_bush = True
+                score += 1
             
             bush.move()
         
@@ -216,6 +222,9 @@ def main():
         for bush in bushes_to_remove:
             bushes.remove(bush)
 
-        draw_window(win, dino, base, bushes)
+        draw_window(win, dino, base, bushes, score)
+
+    pygame.quit()
+    quit()
 
 main()
