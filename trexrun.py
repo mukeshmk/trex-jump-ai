@@ -7,6 +7,9 @@ import random
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
+# initiallise font
+pygame.font.init()
+
 WIN_WIDTH = 1300
 WIN_HEIGHT = 500
 FLOOR = 350
@@ -17,6 +20,8 @@ WHITE = (255, 255, 255)
 dino_imgs = [pygame.transform.scale2x(pygame.image.load(os.path.join("images", "dino-0" + str(x) + ".png"))) for x in range(1, 3)]
 bush_imgs = [pygame.transform.scale2x(pygame.image.load(os.path.join("images", "bush-0" + str(x) + ".png"))) for x in range(1, 4)]
 base_img = pygame.transform.scale2x(pygame.image.load(os.path.join("images", "base.png")))
+
+STAT_FONT = pygame.font.SysFont("comicsans", 50)
 
 class Dino:
     IMGS = dino_imgs
@@ -33,17 +38,32 @@ class Dino:
         # inital image of the t-rex to be displayed
         self.img_count = 0
         self.img = self.IMGS[0]
+        # to check if the t-rex is in jumping motion
+        self.is_jump = False
 
     def move(self):
         # increasing time as move occured every "second" or tick
         self.tick_count += 1
 
         # s = u * t + 0.5 * a * t^2
-        displacement = self.vel * self.tick_count + 0.5 * 3 * (self.tick_count**2)
+        displacement = self.vel * self.tick_count + 0.5 * 1.5 * (self.tick_count**2)
+        
+        # limits the displacement in the downward direction to a max displacement value
+        if displacement >= 16:
+            displacement = 16
+        
+        # limits the displacement in the upward direction to a max displacement value
+        if displacement < 0:
+            displacement -= 2
 
-        # displacement occurs so that the dino lands on the floor and doesn't go below
-        if self.y < DINO_BASE:
-            self.y += displacement
+        self.y += displacement
+        
+        if self.y > DINO_BASE:
+            self.is_jump = False
+            self.y = DINO_BASE
+        else:
+            self.is_jump = True
+
 
     def draw(self, win):
         self.img_count += 1
@@ -56,8 +76,23 @@ class Dino:
         elif self.img_count == self.ANIMATION_TIME*2 + 1:
             self.img = self.IMGS[0]
             self.img_count = 0
+        
+        # To stop running animation when jumping
+        if self.is_jump:
+            self.img = self.IMGS[0]
+            self.img_count = 0
 
         win.blit(self.img, (self.x, self.y))
+    
+    def jump(self):
+        # to avoid double jump when in air
+        if self.is_jump:
+            return
+        # reseting tick_count (time) = 0 to denote the instant at which the jump occured
+        self.tick_count = 0
+        # the velocity with which the bird moves up when it jumps
+        # NOTE vel is negative cause the top left corner of the pygame window is (0, 0)
+        self.vel = -9
 
 class Base:
     VEL = 10
@@ -136,8 +171,10 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                dino.move()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    dino.jump()
+        dino.move()
         base.move()
 
         add_bush = False
@@ -158,8 +195,6 @@ def main():
         for bush in bushes_to_remove:
             bushes.remove(bush)
 
-        if dino.y > FLOOR:
-            dino.y = 0
         draw_window(win, dino, base, bushes)
 
 main()
