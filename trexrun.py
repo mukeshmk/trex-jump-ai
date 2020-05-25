@@ -9,6 +9,7 @@ import pygame
 
 WIN_WIDTH = 750
 WIN_HEIGHT = 400
+FLOOR = 350
 
 WHITE = (255, 255, 255)
 
@@ -16,21 +17,75 @@ dino_imgs = [pygame.transform.scale2x(pygame.image.load(os.path.join("images", "
 bush_imgs = [pygame.transform.scale2x(pygame.image.load(os.path.join("images", "bush-0" + str(x) + ".png"))) for x in range(1, 4)]
 base_img = pygame.transform.scale2x(pygame.image.load(os.path.join("images", "base.png")))
 
+class Dino:
+    IMGS = dino_imgs
+    ANIMATION_TIME = 5
+
+    def __init__(self, x, y):
+        # inital x and y position of the t-rex
+        self.x = x
+        self.y = y
+        # tick_count for time
+        self.tick_count = 0
+        # inital velocity of the t-rex
+        self.vel = 0
+        # inital image of the t-rex to be displayed
+        self.img_count = 0
+        self.img = self.IMGS[0]
+
+    def move(self):
+        # increasing time as move occured every "second" or tick
+        self.tick_count += 1
+
+        # s = u * t + 0.5 * a * t^2
+        displacement = self.vel * self.tick_count + 0.5 * 3 * (self.tick_count**2)
+
+        # displacement occurs so that the dino lands on the floor and doesn't go below
+        if self.y < FLOOR - self.img.get_height():
+            self.y += displacement
+
+    def draw(self, win):
+        self.img_count += 1
+
+        # For animation of the trex, loop through three images
+        if self.img_count <= self.ANIMATION_TIME:
+            self.img = self.IMGS[0]
+        elif self.img_count <= self.ANIMATION_TIME*2:
+            self.img = self.IMGS[1]
+        elif self.img_count <= self.ANIMATION_TIME*3:
+            self.img = self.IMGS[1]
+        elif self.img_count == self.ANIMATION_TIME*3 + 1:
+            self.img = self.IMGS[0]
+            self.img_count = 0
+
+        win.blit(self.img, (self.x, self.y))
+
+
 def draw_window(win, dino):
     win.fill(WHITE)
     win.blit(base_img, (0, 350))
-    win.blit(dino, (200, 200))
+    
+    dino.draw(win)
+    
     win.blit(bush_imgs[0], (400, 300))
     pygame.display.update()
 
 def main():
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    clock = pygame.time.Clock()
 
+    dino = Dino(200, 200)
+    
     run = True
     while run:
+        clock.tick(30)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-        draw_window(win, dino_imgs[0])
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                dino.move()
+        if dino.y > FLOOR:
+            dino.y = 0
+        draw_window(win, dino)
 
 main()
