@@ -60,7 +60,7 @@ class Dino:
         win.blit(self.img, (self.x, self.y))
 
 class Base:
-    VEL = 5
+    VEL = 10
     WIDTH = base_img.get_width()
     IMG = base_img
 
@@ -92,7 +92,7 @@ class Base:
         win.blit(self.IMG, (self.x3, self.y))
 
 class Bush:
-    VEL = 5
+    VEL = 10
 
     def __init__(self, x):
         self.obstacle_size = 0
@@ -114,10 +114,11 @@ class Bush:
         for i in range(self.obstacle_size):
             win.blit(bush_imgs[i], (self.x[i], self.y))
 
-def draw_window(win, dino, base, bush):
+def draw_window(win, dino, base, bushes):
     base.draw(win)
     dino.draw(win)
-    bush.draw(win)
+    for bush in bushes:
+        bush.draw(win)
     
     pygame.display.update()
 
@@ -127,7 +128,7 @@ def main():
 
     dino = Dino(200, DINO_BASE)
     base = Base(FLOOR)
-    bush = Bush(400)
+    bushes = [Bush(400), Bush(1000)]
     
     run = True
     while run:
@@ -138,9 +139,27 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 dino.move()
         base.move()
-        bush.move()
+
+        add_bush = False
+        bushes_to_remove = []
+        for bush in bushes:
+            # to check if the bush has left the game window
+            if bush.x[bush.obstacle_size-1] + bush_imgs[bush.obstacle_size-1].get_width() < 0:
+                bushes_to_remove.append(bush)
+
+            if not bush.passed and bush.x[bush.obstacle_size-1] < dino.x:
+                bush.passed = True
+                add_bush = True
+            
+            bush.move()
+        
+        if add_bush:
+            bushes.append(Bush(1400))
+        for bush in bushes_to_remove:
+            bushes.remove(bush)
+
         if dino.y > FLOOR:
             dino.y = 0
-        draw_window(win, dino, base, bush)
+        draw_window(win, dino, base, bushes)
 
 main()
