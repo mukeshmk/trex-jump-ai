@@ -185,7 +185,7 @@ def main():
 
     dino = Dino(200, DINO_BASE)
     base = Base(FLOOR)
-    bushes = [Bush(600), Bush(1000)]
+    bushes = [Bush(600), Bush(1000), Bush(1400)]
     
     score = 0
 
@@ -207,10 +207,10 @@ def main():
             if bush.collide(dino):
                 run = False
             # to check if the bush has left the game window
-            if bush.x[bush.obstacle_size-1] + bush_imgs[bush.obstacle_size-1].get_width() < 0:
+            if bush.x[bush.obstacle_size - 1] + bush_imgs[bush.obstacle_size - 1].get_width() < 0:
                 bushes_to_remove.append(bush)
 
-            if not bush.passed and bush.x[bush.obstacle_size-1] < dino.x:
+            if not bush.passed and bush.x[bush.obstacle_size - 1] < dino.x:
                 bush.passed = True
                 add_bush = True
                 score += 1
@@ -218,7 +218,7 @@ def main():
             bush.move()
         
         if add_bush:
-            bushes.append(Bush(1400))
+            bushes.append(Bush(bushes[len(bushes) - 1].x[bushes[len(bushes) - 1].obstacle_size - 1] + 400))
         for bush in bushes_to_remove:
             bushes.remove(bush)
 
