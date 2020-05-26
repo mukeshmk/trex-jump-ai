@@ -10,6 +10,8 @@ import pygame
 # initiallise font
 pygame.font.init()
 
+GEN = 0
+
 WIN_WIDTH = 1300
 WIN_HEIGHT = 500
 FLOOR = 350
@@ -90,7 +92,7 @@ class Dino:
             return
         # reseting tick_count (time) = 0 to denote the instant at which the jump occured
         self.tick_count = 0
-        # the velocity with which the bird moves up when it jumps
+        # the velocity with which the t-rex moves up when it jumps
         # NOTE vel is negative cause the top left corner of the pygame window is (0, 0)
         self.vel = -9
 
@@ -168,14 +170,26 @@ class Bush:
                 return True # collision occured
         return False
 
-def draw_window(win, dino, base, bushes, score):
+def draw_window(win, dinos, base, bushes, score, gen):
     base.draw(win)
-    dino.draw(win)
+
+    for dino in dinos:
+        dino.draw(win)
+
     for bush in bushes:
         bush.draw(win)
     
     score_label = STAT_FONT.render("Score: " + str(score), 1, (169, 169, 169))
     win.blit(score_label, (WIN_WIDTH - score_label.get_width() - 15, 10))
+
+    if gen > 0:
+        # generation count
+        gen_label = STAT_FONT.render("Gen: " + str(gen), 1, (169, 169, 169))
+        win.blit(gen_label, (10, 10))
+
+        # alive
+        alive_label = STAT_FONT.render("Alive: " + str(len(dinos)), 1, (169, 169, 169))
+        win.blit(alive_label, (10, 50))
     
     pygame.display.update()
 
@@ -222,9 +236,142 @@ def main():
         for bush in bushes_to_remove:
             bushes.remove(bush)
 
-        draw_window(win, dino, base, bushes, score)
+        draw_window(win, [dino], base, bushes, score, 0)
 
+    pygame.time.wait(2000)
     pygame.quit()
     quit()
 
-main()
+
+def eval_genome(genomes, config):
+    global GEN
+    GEN += 1
+
+    nets = []
+    ge = []
+    dinos = []
+
+    for _, g in genomes:
+        # creates a neural network for the genome (dinos[i] in one generation)
+        # eval_genome function is called multiple times for each generation
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        # creating a dino object to be kept track off
+        dinos.append(Dino(200, DINO_BASE))
+        # initalizing the fitness value of the dino
+        g.fitness = 0
+        ge.append(g)
+
+    win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    clock = pygame.time.Clock()
+
+    base = Base(FLOOR)
+    bushes = [Bush(600), Bush(1000), Bush(1400)]
+    
+    score = 0
+
+    run = True
+    while run:
+        clock.tick(30)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
+                quit()
+
+        # determine which bush on the screen for neural network input
+        bush_ind = 0
+        if len(dinos) > 0 and len(bushes) > 1 :
+            for i, dist in enumerate([bush.x[0] - dinos[0].x for bush in bushes]):
+                if dist > 0:
+                    bush_ind = i
+                    break
+        else:
+            run = False
+            break
+        
+        for x, dino in enumerate(dinos):
+            # give each dino a fitness of 0.1 for each frame it stays alive
+            ge[x].fitness += 0.1
+            dino.move()
+
+            # the input to the neural network is dino location, the bush location which is right infront of it and
+            # the length of the bush and using this the network determine whether the dino has to jump or not
+            output = nets[x].activate((dino.y, abs(dino.x - bushes[bush_ind].x[0]), bushes[bush_ind].obstacle_size))
+
+            # using a tanh activation function so result will be between -1 and 1. if over 0.5 jump
+            # check config file [DefaultGenome] for details
+            # output from the nn is always a list of output values, in our case we have only one output so output[0]
+            if output[0] > 0.5:
+                dino.jump()
+
+        base.move()
+
+        add_bush = False
+        bushes_to_remove = []
+
+        for bush in bushes:
+            for x, dino in enumerate(dinos):
+                if bush.collide(dino):
+                    # reduced the fitness of the dino as it has collided
+                    ge[x].fitness -= 1
+                    # removing the dino, it's nn and it's genome from the list
+                    dinos.pop(x)
+                    nets.pop(x)
+                    ge.pop(x)
+
+                if not bush.passed and bush.x[bush.obstacle_size - 1] < dino.x:
+                    bush.passed = True
+                    add_bush = True
+
+            # to check if the bush has left the game window
+            if bush.x[bush.obstacle_size - 1] + bush_imgs[bush.obstacle_size - 1].get_width() < 0:
+                bushes_to_remove.append(bush)
+            
+            bush.move()
+        
+        if add_bush:
+            score += 1
+            # increasing fitness of dino as it passes threw the bushes
+            for g in ge:
+                g.fitness+=5
+            bushes.append(Bush(bushes[len(bushes) - 1].x[bushes[len(bushes) - 1].obstacle_size - 1] + 400))
+        for bush in bushes_to_remove:
+            bushes.remove(bush)
+
+        draw_window(win, dinos, base, bushes, score, GEN)
+
+        # break if score gets large enough
+        if score >= 30:
+            break
+
+
+def run(config_file):
+    # loading the config file and it's details with the headings:
+    # [DefaultGenome], [DefaultReproduction], [DefaultSpeciesSet], [DefaultStagnation]
+    # [NEAT] is not required to be mentioned as it's a mandatory config
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_file)
+
+    # this is used to set the population details from the config file
+    p = neat.Population(config)
+
+    # this is used to give the output
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+
+    # represents the no of generations to run the fitness funtion
+    generations = 50
+    # the "main" function is our fitness function
+    # the function has to be modified to run for more than one t-rex
+    # i.e., the entire population in that generation
+    # calling it eval_genome and rewriting the function
+    winner = p.run(eval_genome, generations)
+
+
+if __name__ == "__main__":
+    local_dir = os.path.dirname(__file__)
+    config_file = os.path.join(local_dir + 'config-feedforward.txt')
+    run(config_file)

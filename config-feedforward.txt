@@ -1,0 +1,113 @@
+# documentation: https://neat-python.readthedocs.io/en/latest/config_file.html
+
+[NEAT]
+# fitness_criterion: can either be min, max or mean
+# determines how to choose "fit" agents for next generation
+fitness_criterion     = max
+# what fitness value to be achived before termination of program
+fitness_threshold     = 100
+# population size: determines number of agents in each generation
+pop_size              = 20
+# if one generation goes extinct do we have to reset that generation
+reset_on_extinction   = False
+
+# each agent in a generation is called a genome
+# properties: nodes and genes
+# nodes: input and output nodes
+# genes: how the nodes are connected (connections)
+[DefaultGenome]
+# node activation options
+# activation function of the neural network
+activation_default      = tanh
+# to change the activation function something else with probability of activation_mutate_rate
+activation_mutate_rate  = 0.0
+# options of activation function from which activation_mutate_rate picks from
+activation_options      = tanh
+
+# node aggregation options
+aggregation_default     = sum
+aggregation_mutate_rate = 0.0
+aggregation_options     = sum
+
+# node bias options
+# details about inital bias node connections and how likely they are to change
+bias_init_mean          = 0.0
+bias_init_stdev         = 1.0
+# max and min value for the bias node in the neural network
+bias_max_value          = 30.0
+bias_min_value          = -30.0
+# how likely are the bias values to change when the next generation is 
+# mutated based on the previous generation
+bias_mutate_power       = 0.5
+bias_mutate_rate        = 0.7
+bias_replace_rate       = 0.1
+
+# genome compatibility options
+compatibility_disjoint_coefficient = 1.0
+compatibility_weight_coefficient   = 0.5
+
+# connection add/remove rates
+# probability of adding and removing a connection in a neural network
+conn_add_prob           = 0.5
+conn_delete_prob        = 0.5
+
+# connection enable options
+# setting the active or inactive state of connection in a nn
+enabled_default         = True
+# probability with which the state of a connection is likely to change
+enabled_mutate_rate     = 0.01
+
+# to use a feed forward neural network
+feed_forward            = True
+# creates a fully connected layer to start with
+initial_connection      = full
+
+# node add/remove rates
+# probability of adding and removing a node in a neural network
+node_add_prob           = 0.2
+node_delete_prob        = 0.2
+
+# network parameters
+# number of hidden layers
+num_hidden              = 0
+# number of input nodes
+num_inputs              = 3
+# number of output nodes
+num_outputs             = 1
+
+# node response options
+response_init_mean      = 1.0
+response_init_stdev     = 0.0
+response_max_value      = 30.0
+response_min_value      = -30.0
+response_mutate_power   = 0.0
+response_mutate_rate    = 0.0
+response_replace_rate   = 0.0
+
+# connection weight options
+weight_init_mean        = 0.0
+weight_init_stdev       = 1.0
+weight_max_value        = 30
+weight_min_value        = -30
+weight_mutate_power     = 0.5
+weight_mutate_rate      = 0.8
+weight_replace_rate     = 0.1
+
+[DefaultSpeciesSet]
+compatibility_threshold = 3.0
+
+[DefaultStagnation]
+# determines how to choose a "fit" generation
+species_fitness_func = max
+# how many generations can we go without changing the weights of the neural network
+max_stagnation       = 20
+# number of species that will be protected from stagnation
+# if stagnation occurs there weights will be changed for the species_elitism number of agents
+# based on species_fitness_func
+species_elitism      = 2
+
+[DefaultReproduction]
+# number of most-fit individuals in each species that will be preserved as-is from one generation to the next. 
+elitism            = 2
+# fraction for each species allowed to reproduce each generation.
+survival_threshold = 0.2
