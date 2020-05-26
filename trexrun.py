@@ -2,6 +2,7 @@ import os
 import time
 import neat
 import random
+import pickle
 
 #pygame version number and welcome message hidden.
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -24,6 +25,10 @@ bush_imgs = [pygame.transform.scale2x(pygame.image.load(os.path.join("images", "
 base_img = pygame.transform.scale2x(pygame.image.load(os.path.join("images", "base.png")))
 
 STAT_FONT = pygame.font.SysFont("comicsans", 50)
+
+local_dir = os.path.dirname(__file__)
+model_dir = os.path.join(local_dir + 'model')
+model_file = 'genome.pkl'
 
 class Dino:
     IMGS = dino_imgs
@@ -362,13 +367,26 @@ def run(config_file):
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
 
-    # represents the no of generations to run the fitness funtion
-    generations = 50
-    # the "main" function is our fitness function
-    # the function has to be modified to run for more than one t-rex
-    # i.e., the entire population in that generation
-    # calling it eval_genome and rewriting the function
-    winner = p.run(eval_genome, generations)
+    if os.path.exists(model_dir + '/' + model_file):
+        genomes = []
+        with open(model_dir + '/' + model_file, 'rb') as f:
+            genomes = [(1, pickle.load(f))]
+        eval_genome(genomes, config)
+    else :
+        # represents the no of generations to run the fitness funtion
+        generations = 50
+        # the "main" function is our fitness function
+        # the function has to be modified to run for more than one bird
+        # i.e., the entire population in that generation
+        # calling it eval_genome and rewriting the function
+        winner = p.run(eval_genome, generations)
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        with open(model_dir + '/' + model_file, 'wb') as f:
+            pickle.dump(p.best_genome, f)
+
+        # show final stats
+        print('\nBest genome:\n{!s}'.format(winner))
 
 
 if __name__ == "__main__":
